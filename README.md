@@ -32,6 +32,3 @@
    ./main (ubuntu machine)
 
 5. Hit the various endpoints using the corresponding URLs
-
-
-
