@@ -8,21 +8,10 @@ on:
 jobs:
   integration-test:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:latest
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: test
-        ports:
-            - '8888:3306'
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+   
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
-
-      - name: Run MySQL  
-        run: mysql -h 127.0.0.1 --port 8888 -u root -ppassword -e 'CREATE DATABASE IF NOT EXISTS test;'
 
       - name: Set Up go
         uses: actions/setup-go@v4
