@@ -1,0 +1,107 @@
+name: AMI Build Workflow
+
+on:
+  pull_request:
+    types:
+      - opened    # this shoud be changed to merged
+
+jobs:
+  ami-build:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: test
+        ports:
+            - '8888:3306'
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: SetUp Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20' 
+
+    - name: Check Go Installation
+      run: go version
+
+    - name: Download go dependencies
+      run: go mod download
+
+    - name: Run Go Integration Test
+      run: |
+        pwd
+        export DB_HOST=127.0.0.1
+        export DB_PORT=8888
+        export DB_USER=root
+        export DB_PASSWORD=password
+        export DB_NAME=test
+        echo $DB_HOST
+        go test
+
+    - name: Build Artifact - Go Binary
+      run: |
+        pwd
+        ls 
+        go build -o myapp main.go
+        ls 
+
+    - name: Copy artifiact to a new location
+      run: |
+        pwd
+        mkdir target
+        cp myapp ./target
+        cd target
+        ls 
+
+    - name: Configure AWS Credentials for Github Actions
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+        aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+        aws-region: us-east-1
+        
+    - name: Set up Packer
+      uses: hashicorp/setup-packer@main
+      with:
+        version: latest  # Use the latest version of Packer
+
+    - name: Packer Init
+      run: |
+        cd packer
+        packer init .
+
+    - name: Packer Validate
+      run: |
+        pwd
+        cd packer
+        packer validate .
+      
+        exit_status=$?
+
+        if [ $exit_status -eq 0 ]; then
+          echo "Validated Successfully"
+        else
+          echo "Validation failed."
+        fi
+    - name: Check env values
+      run: |
+          echo "The variable value is ${{vars.VARIABLE1}}"
+          echo "The variable value is ${{vars.AMI_DESCRIPTION}}"
+          echo "The variable value is ${{vars.AMI_NAME}}"
+          echo "The variable value is ${{vars.AWS_REGION}}"
+          echo "The variable value is ${{vars.SOURCE_AMI}}"
+          echo "The variable value is ${{vars.SSH_USERNAME}}"
+          echo "The variable value is ${{vars.SUBNET_ID}}"
+
+    - name: Packer Build
+      run: |
+        pwd
+        ls
+        packer build -var ami_name=${{vars.AMI_NAME}} -var ssh_username=${{vars.SSH_USERNAME}} -var aws_region=${{vars.AWS_REGION}} -var source_ami=${{vars.SOURCE_AMI}} -var subnet_id=${{vars.SUBNET_ID}} ./packer
+
