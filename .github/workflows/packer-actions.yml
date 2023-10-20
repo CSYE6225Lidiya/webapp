@@ -1,0 +1,82 @@
+name: Packer Actions Workflow
+
+on:
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  packer-actions:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: SetUp Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20' 
+
+    - name: Check Go Installation
+      run: go version
+
+    - name: Download go dependencies
+      run: go mod download
+
+    - name: Build Artifact - Go Binary
+      run: |
+        pwd
+        ls 
+        go build -o myapp main.go
+        ls 
+
+    - name: Copy artifacts for packer
+      run: |
+        pwd
+        mkdir target
+        cp myapp ./target
+        cd target
+        ls 
+        
+
+    - name: Set up Packer
+      uses: hashicorp/setup-packer@main
+      with:
+        version: latest  # Use the latest version of Packer
+
+    - name: Packer Init
+      run: |
+        cd packer
+        packer init .
+
+    - name: Packer Format
+      run: |
+        pwd
+        cd packer
+        packer fmt -check .
+
+        exit_status=$?
+
+        if [ $exit_status -eq 0 ]; then
+          echo "No formatting needed."
+        else
+          echo "Formatting needed."
+        fi
+
+    - name: Packer Validate
+      run: |
+        pwd
+        cd packer
+        packer validate .
+      
+        exit_status=$?
+
+        if [ $exit_status -eq 0 ]; then
+          echo "Validated Successfully"
+        else
+          echo "Validation failed."
+        fi
