@@ -91,12 +91,12 @@ build {
   }
 
   provisioner "file" {
-    source      = "/home/runner/work/testpr/testpr/target/myapp"
+    source      = "/home/runner/work/webapp/webapp/target/myapp"
     destination = "/tmp/myapp"
   }
 
   provisioner "file" {
-    source      = "/home/runner/work/testpr/testpr/config/users.csv"
+    source      = "/home/runner/work/webapp/webapp/config/users.csv"
     destination = "/tmp/users.csv"
   }
 
