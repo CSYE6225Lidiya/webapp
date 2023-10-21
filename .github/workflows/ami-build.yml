@@ -3,7 +3,7 @@ name: AMI Build Workflow
 on:
   pull_request:
     types:
-      - closed    # this shoud be changed to merged
+      - closed 
 
 jobs:
   ami-build:
