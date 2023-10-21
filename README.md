@@ -32,3 +32,13 @@
    ./main (ubuntu machine)
 
 5. Hit the various endpoints using the corresponding URLs
+
+# Build and Deploy Instructions on AWS
+
+1. When a PR is merged, AMI will be generated.
+
+2. Use pulumi to bring up the ec2 instance
+
+3. Connect to ec2 instance using ssh and run the app 
+
+4. Hit the URLs from any rest client andd test the APIs
