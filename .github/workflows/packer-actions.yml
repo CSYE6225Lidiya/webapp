@@ -52,7 +52,6 @@ jobs:
       run: |
         cd packer
         packer init .
-      continue-on-error: true
 
     - name: Packer Format
       run: |
@@ -67,7 +66,6 @@ jobs:
         else
           echo "Formatting needed."
         fi
-      continue-on-error: true
 
     - name: Packer Validate
       run: |
