@@ -30,3 +30,5 @@ func TestHealthCheckEndpoint(t *testing.T) {
 	// Check the response status code
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+// Trigger a PR
