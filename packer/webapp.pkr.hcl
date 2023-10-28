@@ -86,7 +86,9 @@ build {
       "sudo mv go /usr/local",
       "export GOROOT=/usr/local/go",
       "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH",
-      "sudo apt-get -y install default-mysql-server",
+      "sudo groupadd csye6225",
+      "sudo useradd -s /bin/false -g csye6225 -d /opt/csye6225 -m csye6225",
+
     ]
   }
 
@@ -100,13 +102,29 @@ build {
     destination = "/tmp/users.csv"
   }
 
+  provisioner "file" {
+    source      = "/home/runner/work/webapp/webapp/myapp.service"
+    destination = "/tmp/myapp.service"
+  }
+
   provisioner "shell" {
     inline = [
       "mkdir webapp",
       "cd webapp",
       "cp /tmp/myapp .",
-      "chmod +x myapp",
-      "sudo cp /tmp/users.csv /opt/",
+      "cp /tmp/users.csv .",
+      "cd ..",
+      "sudo chown -R csye6225:csye6225 webapp",
+      "sudo chmod 755 webapp/myapp",
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      "sudo cp /tmp/myapp.service /etc/systemd/system",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl enable myapp",
+      "sudo systemctl start myapp",
     ]
   }
 }
