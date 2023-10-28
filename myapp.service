@@ -1,0 +1,15 @@
+[Unit]
+Description=My WebApp
+ConditionPathExists=/opt/dbconfig.yaml
+After=cloud-final.service
+
+[Service]
+User=csye6225 
+Group=csye6225
+WorkingDirectory=/home/admin/webapp
+ExecStart=/home/admin/webapp/myapp
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=cloud-init.target

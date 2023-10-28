@@ -5,6 +5,7 @@ import (
 	"app/assignment/models"
 	"encoding/csv"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,21 +13,45 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/yaml.v3"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-var dbUser = os.Getenv("DB_USER")
-var dbPassword = os.Getenv("DB_PASSWORD")
-var dbName = os.Getenv("DB_NAME")
-var dbHost = os.Getenv("DB_HOST")
-var dbPort = os.Getenv("DB_PORT")
-var usersFilePath = os.Getenv("USERS_PATH")
+var dbUser string = os.Getenv("DB_USER")
+var dbPassword string = os.Getenv("DB_PASSWORD")
+var dbName string = os.Getenv("DB_NAME")
+var dbHost string = os.Getenv("DB_HOST")
+var dbPort string = os.Getenv("DB_PORT")
 
 var db *gorm.DB
 var dbErr error
 
+type DbConfig struct {
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	DB       string `yaml:"db"`
+}
+
 func main() {
+
+	yamlFile, err := ioutil.ReadFile("/opt/dbconfig.yaml")
+	var dbconfig DbConfig
+	if err == nil {
+		println("Got File--Unmarshalling it")
+		if err := yaml.Unmarshal(yamlFile, &dbconfig); err != nil {
+			fmt.Printf("Unmrshal Unsuccessful: error=%v", err)
+		} else {
+			println("Setting file values into conn details from config file")
+			dbUser = dbconfig.User
+			dbPassword = dbconfig.Password
+			dbName = dbconfig.DB
+			dbHost = dbconfig.Host
+			dbPort = dbconfig.Port
+		}
+	}
 
 	// Connect to DB
 	dbConn := dbUser + ":" + dbPassword + "@tcp" + "(" + dbHost + ":" + dbPort + ")/" + "?" + "parseTime=true&loc=Local"
@@ -61,7 +86,7 @@ func main() {
 	// Bootstrap db with schemas
 	db.AutoMigrate(&models.Account{}, &models.Assignment{})
 
-	file, err := os.Open(usersFilePath)
+	file, err := os.Open("users.csv")
 	if err != nil {
 		println("FILE OPEN ERR")
 		log.Fatal(err)
