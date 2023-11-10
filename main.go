@@ -546,3 +546,5 @@ func updateAssignment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, assResp)
 }
+
+// Trigger an ami build for cloudwatch
