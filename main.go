@@ -178,6 +178,9 @@ func main() {
 
 func healthCheck(c *gin.Context) {
 
+	// Increment the counter metric every time the API is hit
+	statsdClient.Increment("healthz_counter")
+
 	// Set Cache Control
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Header("Pragma", "no-cache")
@@ -220,6 +223,10 @@ func healthCheck(c *gin.Context) {
 }
 
 func createAssignment(c *gin.Context) {
+
+	// Increment the counter metric every time the API is hit
+	statsdClient.Increment("createassignment_counter")
+
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Header("Pragma", "no-cache")
 	c.Header("X-Content-Type-Options", "nosniff")
@@ -288,6 +295,9 @@ func createAssignment(c *gin.Context) {
 
 func getAllAssignments(c *gin.Context) {
 
+	// Increment the counter metric every time the API is hit
+	statsdClient.Increment("getallassignments_counter")
+
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Header("Pragma", "no-cache")
 	c.Header("X-Content-Type-Options", "nosniff")
@@ -335,6 +345,9 @@ func getAllAssignments(c *gin.Context) {
 }
 
 func getAssignment(c *gin.Context) {
+
+	// Increment the counter metric every time the API is hit
+	statsdClient.Increment("getanassignment_counter")
 
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Header("Pragma", "no-cache")
@@ -388,6 +401,9 @@ func getAssignment(c *gin.Context) {
 }
 
 func deleteAssignment(c *gin.Context) {
+
+	// Increment the counter metric every time the API is hit
+	statsdClient.Increment("deleteassignment_counter")
 
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Header("Pragma", "no-cache")
@@ -447,6 +463,9 @@ func deleteAssignment(c *gin.Context) {
 }
 
 func updateAssignment(c *gin.Context) {
+
+	// Increment the counter metric every time the API is hit
+	statsdClient.Increment("updateassignment_counter")
 
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Header("Pragma", "no-cache")
