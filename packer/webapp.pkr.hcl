@@ -86,9 +86,10 @@ build {
       "sudo mv go /usr/local",
       "export GOROOT=/usr/local/go",
       "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH",
+      "wget https://amazoncloudwatch-agent.s3.amazonaws.com/debian/amd64/latest/amazon-cloudwatch-agent.deb",
+      "sudo dpkg -i -E ./amazon-cloudwatch-agent.deb",
       "sudo groupadd csye6225",
       "sudo useradd -s /bin/false -g csye6225 -d /opt/csye6225 -m csye6225",
-
     ]
   }
 
@@ -107,6 +108,11 @@ build {
     destination = "/tmp/myapp.service"
   }
 
+  provisioner "file" {
+    source      = "/home/runner/work/webapp/webapp/config/cloudwatch-config.json"
+    destination = "/tmp/cloudwatch-config.json"
+  }
+
   provisioner "shell" {
     inline = [
       "mkdir webapp",
@@ -122,6 +128,7 @@ build {
   provisioner "shell" {
     inline = [
       "sudo cp /tmp/myapp.service /etc/systemd/system",
+      "sudo cp /tmp/cloudwatch-config.json /opt",
       "sudo systemctl daemon-reload",
       "sudo systemctl enable myapp",
       "sudo systemctl start myapp",
