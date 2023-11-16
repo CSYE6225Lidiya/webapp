@@ -207,8 +207,13 @@ func healthCheck(c *gin.Context) {
 	// Connection String
 	dbConn := dbUser + ":" + dbPassword + "@tcp" + "(" + dbHost + ":" + dbPort + ")/" + dbName + "?" + "parseTime=true&loc=Local"
 	fmt.Println("DB Connection String ", dbConn)
-	_, dbConnErr := gorm.Open(mysql.Open(dbConn), &gorm.Config{})
+	dbHealth, dbConnErr := gorm.Open(mysql.Open(dbConn), &gorm.Config{})
 	fmt.Printf("DB Connection Status: error=%v", dbConnErr)
+	sqlDB, err := dbHealth.DB()
+	if err != nil {
+		log.Error().Err(err).Msg("Healthz Endpoint:Unable to create a sql database object")
+	}
+	defer sqlDB.Close()
 
 	// DB Connection Check
 	if dbConnErr != nil {
