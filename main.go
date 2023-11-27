@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"net/http"
 	"os"
@@ -107,8 +108,9 @@ func main() {
 	}
 
 	// Bootstrap db with schemas
-	db.AutoMigrate(&models.Account{}, &models.Assignment{})
+	db.AutoMigrate(&models.Account{}, &models.Assignment{}, &models.Submission{})
 
+	//file, err := os.Open("./config/users.csv")  // Windows
 	file, err := os.Open("users.csv")
 	if err != nil {
 		println("FILE OPEN ERR")
@@ -171,6 +173,8 @@ func main() {
 	})
 
 	router.DELETE("/v1/assignments/:id", deleteAssignment)
+
+	router.POST("/v1/assignments/:id/submission", submitAssignment)
 
 	router.Run()
 
@@ -552,4 +556,140 @@ func updateAssignment(c *gin.Context) {
 	c.JSON(http.StatusOK, assResp)
 }
 
-// Trigger an ami build for cloudwatch
+func submitAssignment(c *gin.Context) {
+
+	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Header("Pragma", "no-cache")
+	c.Header("X-Content-Type-Options", "nosniff")
+
+	log.Info().Str("ip", c.ClientIP()).Str("http_method", c.Request.Method).Msg("SubmitAssignment Endpoint")
+
+	// Authenticate the user and obtain their user ID
+	userID, err := controllers.AuthenticateUser(c, db)
+	if err != nil {
+		err := errors.New("AUTHENTICATION ERROR")
+		log.Error().Err(err).Str("ip", c.ClientIP()).Str("http_method", c.Request.Method).Msg("SubmitAssignment Endpoint:Unable to authenticate the request")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization Failed"})
+		return
+	}
+
+	// Get the assignment ID from the request parameters
+	assignmentIDStr := c.Param("id")
+	assignmentID, err := strconv.ParseUint(assignmentIDStr, 10, 64)
+	if err != nil {
+		err := errors.New("INVALID ASSIGNMENT ID")
+		log.Error().Err(err).Str("ip", c.ClientIP()).Str("http_method", c.Request.Method).Msg("SubmitAssignment Endpoint:The assignment ID is Invalid")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid assignment ID"})
+		return
+	}
+
+	// Check if the assignment exists
+	var assignment models.Assignment
+	if err := db.Where("id = ?", assignmentID).First(&assignment).Error; err != nil {
+		err := errors.New("ASSIGNMENT NOT FOUND")
+		log.Error().Err(err).Str("ip", c.ClientIP()).Str("http_method", c.Request.Method).Msg("SubmitAssignment Endpoint:The assignment doesn't exist")
+		c.JSON(http.StatusNotFound, gin.H{"error": "Assignment not found"})
+		return
+	}
+
+	// Validate Req Body contains URL
+	var submissionInput models.SubmissionInput
+	if err := c.ShouldBindJSON(&submissionInput); err != nil {
+		err := errors.New("INCORRECT REQUEST BODY")
+		log.Error().Err(err).Str("ip", c.ClientIP()).Str("http_method", c.Request.Method).Msg("SubmitAssignment Endpoint:The request body is incorrect")
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if submission already exists for the given assignment ID
+	var existingSubmission models.Submission
+	//result := db.Where("assignment_id = ?", assignmentID).First(&existingSubmission)
+	result := db.Where("assignment_id = ? AND account_id = ?", assignmentID, userID).First(&existingSubmission)
+	if result.RowsAffected > 0 { // Submission already exists
+		println("**************Submission exists")
+		// Compare retries
+		if assignment.NoOfAttempts == existingSubmission.SubmissionRetries {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum no of attempts reached! No more retries available"})
+			return
+		}
+
+		//Compare date
+
+		// Parse the deadline string into a time.Time object
+		deadlineTime, err := time.Parse("2006-01-02T15:04:05.999Z", assignment.Deadline)
+
+		if err != nil {
+			println("------------------------------DATE PARSE ERR", err.Error())
+			c.JSON(400, gin.H{"error": "Error parsing deadline date"})
+			return
+		}
+		currentTime := time.Now().UTC()
+		// Compare the current time with the assignment deadline
+		if currentTime.After(deadlineTime) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignment deadline has passed"})
+			return
+		}
+
+		existingSubmission.SubmissionRetries++
+		existingSubmission.SubmissionUrl = submissionInput.SubmissionUrl
+		// Save the updated assignment to the database
+		if err := db.Save(&existingSubmission).Error; err != nil {
+			err := errors.New("UPDATE ERROR")
+			log.Error().Err(err).Str("ip", c.ClientIP()).Str("http_method", c.Request.Method).Msg("SubmitAssignment Endpoint:Failed to update the assignment")
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": "Failed to update the assignment submission"})
+			return
+		}
+
+		subResp := models.SubmissionResponse{
+			ID:                existingSubmission.ID,
+			AssignmentID:      assignment.ID,
+			SubmissionUrl:     submissionInput.SubmissionUrl,
+			SubmissionDate:    existingSubmission.UpdatedAt.String(),
+			SubmissionRetries: existingSubmission.SubmissionRetries,
+		}
+
+		c.JSON(http.StatusOK, subResp)
+		return
+
+	} else {
+		println("*submssn dosent exist-----Create new submission")
+		// Compare date
+		// Parse the deadline string into a time.Time object
+		deadlineTime, err := time.Parse("2006-01-02T15:04:05.999Z", assignment.Deadline)
+
+		if err != nil {
+			println("------------------------------DATE PARSE ERR", err.Error())
+			c.JSON(400, gin.H{"error": "Error parsing deadline date"})
+			return
+		}
+		currentTime := time.Now().UTC()
+		// Compare the current time with the assignment deadline
+		if currentTime.After(deadlineTime) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignment deadline has passed"})
+			return
+		}
+
+		// Create a submission
+
+		newSubmission := models.Submission{
+			AssignmentID:      assignmentID,
+			AccountID:         userID,
+			SubmissionUrl:     submissionInput.SubmissionUrl,
+			SubmissionRetries: 1, // Set other fields as needed
+		}
+
+		db.Create(&newSubmission)
+
+		subResp := models.SubmissionResponse{
+			ID:                newSubmission.ID,
+			AssignmentID:      assignment.ID,
+			SubmissionUrl:     submissionInput.SubmissionUrl,
+			SubmissionDate:    newSubmission.UpdatedAt.String(),
+			SubmissionRetries: 1,
+		}
+
+		c.JSON(http.StatusOK, subResp)
+		return
+	}
+
+}
