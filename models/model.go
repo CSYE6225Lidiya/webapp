@@ -38,3 +38,25 @@ type AssignmentResponse struct {
 	AssignemtCreated  string
 	AssignmentUpdated string
 }
+
+type Submission struct {
+	gorm.Model
+	AssignmentID      uint64     // Foreign Key to Assignment Table
+	Assignment        Assignment `gorm:"foreignKey:AssignmentID"`
+	AccountID         uint       // Foreign key to Account table
+	Account           Account    `gorm:"foreignKey:AccountID"`
+	SubmissionUrl     string     `json:"submission_url"`
+	SubmissionRetries int
+}
+
+type SubmissionInput struct {
+	SubmissionUrl string `json:"submission_url"`
+}
+
+type SubmissionResponse struct {
+	ID                uint
+	AssignmentID      uint   `json:"assignment_id"`
+	SubmissionUrl     string `json:"submission_url"`
+	SubmissionDate    string `json:"submission_date"`
+	SubmissionRetries int    `json:"submission_retries"`
+}
