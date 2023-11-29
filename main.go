@@ -3,6 +3,7 @@ package main
 import (
 	"app/assignment/controllers"
 	"app/assignment/models"
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -12,6 +13,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
 
 	statsd "github.com/etsy/statsd/examples/go"
 	"github.com/gin-gonic/gin"
@@ -37,6 +42,9 @@ type DbConfig struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	DB       string `yaml:"db"`
+}
+type AssignmentData struct {
+	Name string `json:"name"`
 }
 
 // Initialize the StatsD client
@@ -110,8 +118,8 @@ func main() {
 	// Bootstrap db with schemas
 	db.AutoMigrate(&models.Account{}, &models.Assignment{}, &models.Submission{})
 
-	//file, err := os.Open("./config/users.csv")  // Windows
-	file, err := os.Open("users.csv")
+	file, err := os.Open("./config/users.csv") // Windows
+	//file, err := os.Open("users.csv")
 	if err != nil {
 		println("FILE OPEN ERR")
 		log.Error().Err(err).Str("file", "users.csv").Msg("Failed to open the users file given")
@@ -689,6 +697,48 @@ func submitAssignment(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, subResp)
+
+		// Publish to SNS
+		cfg, err := config.LoadDefaultConfig(context.TODO())
+		if err != nil {
+			fmt.Println("$$$$$$$$$$$$$$$$$$$$$$AWSConfigReadErr", err)
+		}
+		client := sns.NewFromConfig(cfg)
+		//message := fmt.Sprintf("New submission for Assignment ID %d by User ID %d. Submission URL: %s", assignmentID, userID, submissionInput.SubmissionUrl)
+		// Construct the AssignmentData struct
+		// assignmentData := AssignmentData{Name: assignment.Name}
+		// // Convert AssignmentData to JSON
+		// messageBody, err := json.Marshal(assignmentData)
+		// msgStr := string(messageBody)
+		// if err != nil {
+		// 	fmt.Println("$$$$$$$$$$JSONMARSHALERRMSGBODY", err)
+		// }
+
+		topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
+
+		// publishInput := &sns.PublishInput{
+		// 	TopicArn:         &topicArn, // Replace with your actual SNS topic ARN
+		// 	Message:          aws.String(msgStr),
+		// 	MessageStructure: aws.String("json"),
+		// }
+
+		// _, err = client.Publish(context.TODO(), publishInput)
+		// fmt.Println("$$$$$$$$$$$$$$$SNSPublishErr", err)
+
+		message := `{"name": "John","age":"two"}`
+		// Publish the message to the SNS topic
+		publishInput := &sns.PublishInput{
+			Message:  aws.String(message),
+			TopicArn: aws.String(topicArn),
+		}
+
+		_, err = client.Publish(context.TODO(), publishInput)
+		fmt.Println("$$$$$$$$$$$$$$$SNSPublishErr", err)
+		if err != nil {
+			fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$Error publishing message:", err.Error())
+			//return
+		}
+
 		return
 	}
 
