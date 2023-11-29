@@ -118,8 +118,8 @@ func main() {
 	// Bootstrap db with schemas
 	db.AutoMigrate(&models.Account{}, &models.Assignment{}, &models.Submission{})
 
-	file, err := os.Open("./config/users.csv") // Windows
-	//file, err := os.Open("users.csv")
+	//file, err := os.Open("./config/users.csv") // Windows
+	file, err := os.Open("users.csv")
 	if err != nil {
 		println("FILE OPEN ERR")
 		log.Error().Err(err).Str("file", "users.csv").Msg("Failed to open the users file given")
