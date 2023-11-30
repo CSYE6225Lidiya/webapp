@@ -116,8 +116,8 @@ func main() {
 	// Bootstrap db with schemas
 	db.AutoMigrate(&models.Account{}, &models.Assignment{}, &models.Submission{})
 
-	//file, err := os.Open("./config/users.csv") // Windows
-	file, err := os.Open("users.csv")
+	file, err := os.Open("./config/users.csv") // Windows
+	//file, err := os.Open("users.csv")
 	if err != nil {
 		println("FILE OPEN ERR")
 		log.Error().Err(err).Str("file", "users.csv").Msg("Failed to open the users file given")
@@ -610,6 +610,11 @@ func submitAssignment(c *gin.Context) {
 	// Check if submission already exists for the given assignment ID
 	var existingSubmission models.Submission
 	//result := db.Where("assignment_id = ?", assignmentID).First(&existingSubmission)
+
+	// SNS Client Creation
+	snsClient := createSNSSession()
+	topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
+
 	result := db.Where("assignment_id = ? AND account_id = ?", assignmentID, userID).First(&existingSubmission)
 	if result.RowsAffected > 0 { // Submission already exists
 		println("**************Submission exists")
@@ -655,6 +660,20 @@ func submitAssignment(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, subResp)
+		message := `{"name": "John","age":"two"}`
+
+		//snsClient := createSNSSession()
+
+		err = publishToSNS(snsClient, topicArn, message)
+		if err != nil {
+			fmt.Print("***************************PUBLISH ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", err.Error())
+			log.Error().Err(err).Msg(err.Error())
+			//	return
+		} else {
+			fmt.Print("FMT___________________PUBLISHED SUCCESSFULLY TO SNS Resubmission")
+			log.Info().Msg("Published successfully to sns from Resubmission")
+		}
+
 		return
 
 	} else {
@@ -737,10 +756,11 @@ func submitAssignment(c *gin.Context) {
 		// 	//return
 		// }
 
-		topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast" // replace with your SNS topic ARN
+		//---------------------------------------------------------------------------------------------------------------
+		//	topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast" // replace with your SNS topic ARN
 		message := `{"name": "John","age":"two"}`
 
-		snsClient := createSNSSession()
+		//snsClient := createSNSSession()
 
 		err = publishToSNS(snsClient, topicArn, message)
 		if err != nil {
@@ -748,8 +768,8 @@ func submitAssignment(c *gin.Context) {
 			log.Error().Err(err).Msg(err.Error())
 			//	return
 		} else {
-			fmt.Print("FMT___________________PUBLISHED SUCCESSFULLY TO SNS")
-			log.Info().Msg("Published successfully to sns")
+			fmt.Print("FMT___________________PUBLISHED SUCCESSFULLY TO SNS NewSubmission")
+			log.Info().Msg("Published successfully to sns NewSubmission")
 		}
 
 		return
