@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"net/http"
@@ -116,8 +117,8 @@ func main() {
 	// Bootstrap db with schemas
 	db.AutoMigrate(&models.Account{}, &models.Assignment{}, &models.Submission{})
 
-	file, err := os.Open("./config/users.csv") // Windows
-	//file, err := os.Open("users.csv")
+	//file, err := os.Open("./config/users.csv") // Windows
+	file, err := os.Open("users.csv")
 	if err != nil {
 		println("FILE OPEN ERR")
 		log.Error().Err(err).Str("file", "users.csv").Msg("Failed to open the users file given")
@@ -660,11 +661,36 @@ func submitAssignment(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, subResp)
-		message := `{"name": "John","age":"two"}`
+
+		assName := assignment.Name
+		retry := strconv.Itoa(subResp.SubmissionRetries)
+		subTime := currentTime.String()
+		userEmail, _, _ := c.Request.BasicAuth()
+		subEmail := userEmail
+		downloadURL := subResp.SubmissionUrl
+		var uName string
+
+		// Split the email address by "@" to separate the username and domain
+		parts := strings.Split(subEmail, "@")
+
+		// Check if the split resulted in two parts
+		if len(parts) == 2 {
+			// The username is the first part before "@"
+			uName = parts[0]
+
+			// Print the result
+			fmt.Println(uName)
+		}
+
+		message1 := fmt.Sprintf(`{"name": "%s", "age": "two", "assName": "%s", "retry": "%s", "email": "%s", "time": "%s", "downloadURL": "%s"}`, uName, assName, retry, subEmail, subTime, downloadURL)
+		fmt.Println("******************************")
+		fmt.Println(message1)
+		fmt.Println("******************************")
+		//message := `{"name": "John","age":"two"}`
 
 		//snsClient := createSNSSession()
 
-		err = publishToSNS(snsClient, topicArn, message)
+		err = publishToSNS(snsClient, topicArn, message1)
 		if err != nil {
 			fmt.Print("***************************PUBLISH ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", err.Error())
 			log.Error().Err(err).Msg(err.Error())
@@ -758,11 +784,36 @@ func submitAssignment(c *gin.Context) {
 
 		//---------------------------------------------------------------------------------------------------------------
 		//	topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast" // replace with your SNS topic ARN
-		message := `{"name": "John","age":"two"}`
+		//message := `{"name": "John","age":"two"}`
 
 		//snsClient := createSNSSession()
 
-		err = publishToSNS(snsClient, topicArn, message)
+		assName := assignment.Name
+		retry := strconv.Itoa(subResp.SubmissionRetries)
+		subTime := currentTime.String()
+		userEmail, _, _ := c.Request.BasicAuth()
+		subEmail := userEmail
+		downloadURL := subResp.SubmissionUrl
+		var uName string
+
+		// Split the email address by "@" to separate the username and domain
+		parts := strings.Split(subEmail, "@")
+
+		// Check if the split resulted in two parts
+		if len(parts) == 2 {
+			// The username is the first part before "@"
+			uName = parts[0]
+
+			// Print the result
+			fmt.Println(uName)
+		}
+
+		message1 := fmt.Sprintf(`{"name": "%s", "age": "two", "assName": "%s", "retry": "%s", "email": "%s", "time": "%s", "downloadURL": "%s"}`, uName, assName, retry, subEmail, subTime, downloadURL)
+		fmt.Println("******************************")
+		fmt.Println(message1)
+		fmt.Println("******************************")
+
+		err = publishToSNS(snsClient, topicArn, message1)
 		if err != nil {
 			fmt.Print("***************************PUBLISH ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", err.Error())
 			log.Error().Err(err).Msg(err.Error())
