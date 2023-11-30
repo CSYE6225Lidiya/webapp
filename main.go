@@ -3,7 +3,6 @@ package main
 import (
 	"app/assignment/controllers"
 	"app/assignment/models"
-	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -14,10 +13,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/sns"
-
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sns"
 	statsd "github.com/etsy/statsd/examples/go"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -698,48 +696,83 @@ func submitAssignment(c *gin.Context) {
 
 		c.JSON(http.StatusOK, subResp)
 
-		// Publish to SNS
-		cfg, err := config.LoadDefaultConfig(context.TODO())
-		if err != nil {
-			fmt.Println("$$$$$$$$$$$$$$$$$$$$$$AWSConfigReadErr", err)
-		}
-		client := sns.NewFromConfig(cfg)
-		//message := fmt.Sprintf("New submission for Assignment ID %d by User ID %d. Submission URL: %s", assignmentID, userID, submissionInput.SubmissionUrl)
-		// Construct the AssignmentData struct
-		// assignmentData := AssignmentData{Name: assignment.Name}
-		// // Convert AssignmentData to JSON
-		// messageBody, err := json.Marshal(assignmentData)
-		// msgStr := string(messageBody)
+		// // Publish to SNS
+		// cfg, err := config.LoadDefaultConfig(context.TODO())
 		// if err != nil {
-		// 	fmt.Println("$$$$$$$$$$JSONMARSHALERRMSGBODY", err)
+		// 	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$AWSConfigReadErr", err)
 		// }
+		// client := sns.NewFromConfig(cfg)
+		// //message := fmt.Sprintf("New submission for Assignment ID %d by User ID %d. Submission URL: %s", assignmentID, userID, submissionInput.SubmissionUrl)
+		// // Construct the AssignmentData struct
+		// // assignmentData := AssignmentData{Name: assignment.Name}
+		// // // Convert AssignmentData to JSON
+		// // messageBody, err := json.Marshal(assignmentData)
+		// // msgStr := string(messageBody)
+		// // if err != nil {
+		// // 	fmt.Println("$$$$$$$$$$JSONMARSHALERRMSGBODY", err)
+		// // }
 
-		topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
+		// topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
 
+		// // publishInput := &sns.PublishInput{
+		// // 	TopicArn:         &topicArn, // Replace with your actual SNS topic ARN
+		// // 	Message:          aws.String(msgStr),
+		// // 	MessageStructure: aws.String("json"),
+		// // }
+
+		// // _, err = client.Publish(context.TODO(), publishInput)
+		// // fmt.Println("$$$$$$$$$$$$$$$SNSPublishErr", err)
+
+		// message := `{"name": "John","age":"two"}`
+		// // Publish the message to the SNS topic
 		// publishInput := &sns.PublishInput{
-		// 	TopicArn:         &topicArn, // Replace with your actual SNS topic ARN
-		// 	Message:          aws.String(msgStr),
-		// 	MessageStructure: aws.String("json"),
+		// 	Message:  aws.String(message),
+		// 	TopicArn: aws.String(topicArn),
 		// }
 
 		// _, err = client.Publish(context.TODO(), publishInput)
 		// fmt.Println("$$$$$$$$$$$$$$$SNSPublishErr", err)
+		// if err != nil {
+		// 	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$Error publishing message:", err.Error())
+		// 	//return
+		// }
 
+		topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast" // replace with your SNS topic ARN
 		message := `{"name": "John","age":"two"}`
-		// Publish the message to the SNS topic
-		publishInput := &sns.PublishInput{
-			Message:  aws.String(message),
-			TopicArn: aws.String(topicArn),
-		}
 
-		_, err = client.Publish(context.TODO(), publishInput)
-		fmt.Println("$$$$$$$$$$$$$$$SNSPublishErr", err)
+		snsClient := createSNSSession()
+
+		err = publishToSNS(snsClient, topicArn, message)
 		if err != nil {
-			fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$Error publishing message:", err.Error())
-			//return
+			fmt.Print("***************************PUBLISH ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", err.Error())
+			log.Error().Err(err).Msg(err.Error())
+			//	return
+		} else {
+			fmt.Print("FMT___________________PUBLISHED SUCCESSFULLY TO SNS")
+			log.Info().Msg("Published successfully to sns")
 		}
 
 		return
 	}
 
+}
+
+func createSNSSession() *sns.SNS {
+	fmt.Println("************INSIDE CREATE NEW SESSION")
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1"), // replace with your AWS region
+	}))
+
+	return sns.New(sess)
+}
+
+func publishToSNS(snsClient *sns.SNS, topicArn, message string) error {
+	fmt.Println("************PUBLISH TO SNS")
+	params := &sns.PublishInput{
+		Message:  aws.String(message),
+		TopicArn: aws.String(topicArn),
+	}
+
+	_, err := snsClient.Publish(params)
+	return err
 }
