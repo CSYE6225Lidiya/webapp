@@ -31,6 +31,7 @@ var dbPassword string = os.Getenv("DB_PASSWORD")
 var dbName string = os.Getenv("DB_NAME")
 var dbHost string = os.Getenv("DB_HOST")
 var dbPort string = os.Getenv("DB_PORT")
+var snsArn string
 
 var db *gorm.DB
 var dbErr error
@@ -41,6 +42,7 @@ type DbConfig struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	DB       string `yaml:"db"`
+	SnsArn   string `yaml:"snsarn"`
 }
 type AssignmentData struct {
 	Name string `json:"name"`
@@ -75,11 +77,13 @@ func main() {
 		} else {
 			println("Setting file values into conn details from config file")
 			log.Info().Msg("Successfully read the database configuration given and setting up the values for connection")
+			//	log.Info().Msg("")
 			dbUser = dbconfig.User
 			dbPassword = dbconfig.Password
 			dbName = dbconfig.DB
 			dbHost = dbconfig.Host
 			dbPort = dbconfig.Port
+			snsArn = dbconfig.SnsArn
 		}
 	}
 
@@ -614,7 +618,8 @@ func submitAssignment(c *gin.Context) {
 
 	// SNS Client Creation
 	snsClient := createSNSSession()
-	topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
+	//topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
+	topicArn := snsArn
 
 	result := db.Where("assignment_id = ? AND account_id = ?", assignmentID, userID).First(&existingSubmission)
 	if result.RowsAffected > 0 { // Submission already exists
