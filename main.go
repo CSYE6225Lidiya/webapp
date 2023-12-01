@@ -624,7 +624,7 @@ func submitAssignment(c *gin.Context) {
 		println("**************Submission exists")
 		// Compare retries
 		if assignment.NoOfAttempts == existingSubmission.SubmissionRetries {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum no of attempts reached! No more retries available"})
+			c.JSON(http.StatusNotAcceptable, gin.H{"error": "Maximum no of attempts reached! No more retries available"})
 			return
 		}
 
@@ -641,7 +641,7 @@ func submitAssignment(c *gin.Context) {
 		currentTime := time.Now().UTC()
 		// Compare the current time with the assignment deadline
 		if currentTime.After(deadlineTime) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignment deadline has passed"})
+			c.JSON(http.StatusNotAcceptable, gin.H{"error": "Assignment deadline has passed"})
 			return
 		}
 
@@ -685,7 +685,7 @@ func submitAssignment(c *gin.Context) {
 			fmt.Println(uName)
 		}
 
-		message1 := fmt.Sprintf(`{"name": "%s", "age": "two", "assName": "%s", "retry": "%s", "email": "%s", "time": "%s", "downloadURL": "%s"}`, uName, assName, retry, subEmail, subTime, downloadURL)
+		message1 := fmt.Sprintf(`{"name": "%s", "assName": "%s", "retry": "%s", "email": "%s", "time": "%s", "downloadURL": "%s"}`, uName, assName, retry, subEmail, subTime, downloadURL)
 		fmt.Println("******************************")
 		fmt.Println(message1)
 		fmt.Println("******************************")
@@ -716,7 +716,7 @@ func submitAssignment(c *gin.Context) {
 		currentTime := time.Now().UTC()
 		// Compare the current time with the assignment deadline
 		if currentTime.After(deadlineTime) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Assignment deadline has passed"})
+			c.JSON(http.StatusNotAcceptable, gin.H{"error": "Assignment deadline has passed"})
 			return
 		}
 
@@ -761,7 +761,7 @@ func submitAssignment(c *gin.Context) {
 			fmt.Println(uName)
 		}
 
-		message1 := fmt.Sprintf(`{"name": "%s", "age": "two", "assName": "%s", "retry": "%s", "email": "%s", "time": "%s", "downloadURL": "%s"}`, uName, assName, retry, subEmail, subTime, downloadURL)
+		message1 := fmt.Sprintf(`{"name": "%s", "assName": "%s", "retry": "%s", "email": "%s", "time": "%s", "downloadURL": "%s"}`, uName, assName, retry, subEmail, subTime, downloadURL)
 		fmt.Println("******************************")
 		fmt.Println(message1)
 		fmt.Println("******************************")
