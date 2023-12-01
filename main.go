@@ -614,11 +614,9 @@ func submitAssignment(c *gin.Context) {
 
 	// Check if submission already exists for the given assignment ID
 	var existingSubmission models.Submission
-	//result := db.Where("assignment_id = ?", assignmentID).First(&existingSubmission)
 
-	// SNS Client Creation
+	// SNS Client and Topic Creation
 	snsClient := createSNSSession()
-	//topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
 	topicArn := snsArn
 
 	result := db.Where("assignment_id = ? AND account_id = ?", assignmentID, userID).First(&existingSubmission)
@@ -691,9 +689,6 @@ func submitAssignment(c *gin.Context) {
 		fmt.Println("******************************")
 		fmt.Println(message1)
 		fmt.Println("******************************")
-		//message := `{"name": "John","age":"two"}`
-
-		//snsClient := createSNSSession()
 
 		err = publishToSNS(snsClient, topicArn, message1)
 		if err != nil {
@@ -745,53 +740,6 @@ func submitAssignment(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusOK, subResp)
-
-		// // Publish to SNS
-		// cfg, err := config.LoadDefaultConfig(context.TODO())
-		// if err != nil {
-		// 	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$AWSConfigReadErr", err)
-		// }
-		// client := sns.NewFromConfig(cfg)
-		// //message := fmt.Sprintf("New submission for Assignment ID %d by User ID %d. Submission URL: %s", assignmentID, userID, submissionInput.SubmissionUrl)
-		// // Construct the AssignmentData struct
-		// // assignmentData := AssignmentData{Name: assignment.Name}
-		// // // Convert AssignmentData to JSON
-		// // messageBody, err := json.Marshal(assignmentData)
-		// // msgStr := string(messageBody)
-		// // if err != nil {
-		// // 	fmt.Println("$$$$$$$$$$JSONMARSHALERRMSGBODY", err)
-		// // }
-
-		// topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast"
-
-		// // publishInput := &sns.PublishInput{
-		// // 	TopicArn:         &topicArn, // Replace with your actual SNS topic ARN
-		// // 	Message:          aws.String(msgStr),
-		// // 	MessageStructure: aws.String("json"),
-		// // }
-
-		// // _, err = client.Publish(context.TODO(), publishInput)
-		// // fmt.Println("$$$$$$$$$$$$$$$SNSPublishErr", err)
-
-		// message := `{"name": "John","age":"two"}`
-		// // Publish the message to the SNS topic
-		// publishInput := &sns.PublishInput{
-		// 	Message:  aws.String(message),
-		// 	TopicArn: aws.String(topicArn),
-		// }
-
-		// _, err = client.Publish(context.TODO(), publishInput)
-		// fmt.Println("$$$$$$$$$$$$$$$SNSPublishErr", err)
-		// if err != nil {
-		// 	fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$Error publishing message:", err.Error())
-		// 	//return
-		// }
-
-		//---------------------------------------------------------------------------------------------------------------
-		//	topicArn := "arn:aws:sns:us-east-1:203689115380:topiceast" // replace with your SNS topic ARN
-		//message := `{"name": "John","age":"two"}`
-
-		//snsClient := createSNSSession()
 
 		assName := assignment.Name
 		retry := strconv.Itoa(subResp.SubmissionRetries)
@@ -852,5 +800,3 @@ func publishToSNS(snsClient *sns.SNS, topicArn, message string) error {
 	_, err := snsClient.Publish(params)
 	return err
 }
-
-// Trigger a PR
