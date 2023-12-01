@@ -852,3 +852,5 @@ func publishToSNS(snsClient *sns.SNS, topicArn, message string) error {
 	_, err := snsClient.Publish(params)
 	return err
 }
+
+// Trigger a PR
