@@ -126,7 +126,7 @@ jobs:
       if: success()
       run: |
         ami_id=$(aws ec2 describe-images --region us-east-1 --filters "Name=name,Values=${{vars.AMI_NAME}}" "Name=is-public,Values=false" "Name=state,Values=available" --query "Images[0].ImageId" --output text)
-        echo "AMI ID: $(ami_id)"
+        echo "AMI ID: $ami_id"
         aws ec2 create-launch-template-version --launch-template-id ${{vars.LAUNCH_TEMP_ID}} --version-description version2 --source-version 1 --launch-template-data "ImageId=$ami_id"
 
     - name: Update Auto scaling Group with new launch template version
