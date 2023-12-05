@@ -122,3 +122,36 @@ jobs:
         ls
         packer build -var ami_name=${{vars.AMI_NAME}} -var ssh_username=${{vars.SSH_USERNAME}} -var aws_region=${{vars.AWS_REGION}} -var source_ami=${{vars.SOURCE_AMI}} -var subnet_id=${{vars.SUBNET_ID}} ./packer
 
+    - name: Create New Launch Template
+      if: success()
+      run: |
+        ami_id=$(aws ec2 describe-images --region us-east-1 --filters "Name=name,Values=${{vars.AMI_NAME}}" "Name=is-public,Values=false" "Name=state,Values=available" --query "Images[0].ImageId" --output text)
+        echo "AMI ID: $(ami_id)"
+        aws ec2 create-launch-template-version --launch-template-id ${{vars.LAUNCH_TEMP_ID}} --version-description version2 --source-version 1 --launch-template-data "ImageId=$ami_id"
+
+    - name: Update Auto scaling Group with new launch template version
+      if: success()
+      run: |
+        aws autoscaling update-auto-scaling-group --auto-scaling-group-name asg --launch-template LaunchTemplateName=launchTemplate,Version='2'
+
+    - name: AutoScale Group Refresh
+      if: success()
+      run: |
+        aws autoscaling start-instance-refresh --auto-scaling-group-name asg
+
+    - name: Wait for Instance Refresh to Complete
+      run: |
+        while true; do
+          status=$(aws autoscaling describe-instance-refreshes --auto-scaling-group-name asg --query 'InstanceRefreshes[0].Status' --output text)
+          if [ "$status" = "Successful" ]; then
+            echo "Instance refresh completed successfully."
+            break
+          elif [ "$status" = "Failed" ]; then
+            echo "Instance refresh failed."
+            exit 1
+          else
+            echo "Instance refresh is still in progress. Waiting..."
+            sleep 60  # Adjust the sleep duration based on your requirements
+          fi
+        done
+      
