@@ -169,9 +169,12 @@ jobs:
           elif [ "$status" = "Failed" ]; then
             echo "Instance refresh failed."
             exit 1
+           elif [ "$status" = "Cancelled" ]; then
+            echo "Instance refresh cancelled."
+            exit 1
           else
             echo "Instance refresh is still in progress. Waiting..."
-            sleep 60  # Adjust the sleep duration based on your requirements
+            sleep 60  # Adjust the sleep duration based on requirements
           fi
         done
       env:
