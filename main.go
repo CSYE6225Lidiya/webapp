@@ -173,7 +173,7 @@ func main() {
 
 	router.POST("/v1/assignments", createAssignment)
 
-	router.GET("/v2/assignments", getAllAssignments)
+	router.GET("/v1/assignments", getAllAssignments)
 
 	router.GET("/v1/assignments/:id", getAssignment)
 
