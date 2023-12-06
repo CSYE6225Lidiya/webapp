@@ -42,3 +42,11 @@
 3. Connect to ec2 instance using ssh and run the app 
 
 4. Hit the URLs from any rest client andd test the APIs
+
+# SSL Cerificate
+
+SSl certificates are used form zerssl for demo. The command used to import certificate is given below:
+
+    aws acm import-certificate --certificate fileb://certificate.crt --certificate-chain fileb://ca_bundle.crt --private-key fileb://private.key
+
+*Set aws profile before executing the command
